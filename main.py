@@ -20,19 +20,18 @@ tokenizer.fit_on_texts(input_texts + target_texts)
 input_sequences = tokenizer.texts_to_sequences(input_texts)
 target_sequences = tokenizer.texts_to_sequences(target_texts)
 
+# Determine the maximum sequence length
 max_sequence_length = max([len(seq) for seq in input_sequences + target_sequences])
 input_sequences = pad_sequences(input_sequences, maxlen=max_sequence_length, padding='post')
 target_sequences = pad_sequences(target_sequences, maxlen=max_sequence_length, padding='post')
 
 # Create the target sequences with a start and end token
-target_sequences = np.array([np.append(seq, [0]) for seq in target_sequences])
-target_sequences_input = np.array([[0] + list(seq) for seq in target_sequences])
-
-# Vocabulary size
 vocab_size = len(tokenizer.word_index) + 1
 
-# Create the target data
-target_data = np.zeros((len(target_sequences), max_sequence_length, vocab_size))
+target_sequences_input = np.array([[0] + list(seq)[:-1] for seq in target_sequences])
+
+# Create the target data in a one-hot encoded format
+target_data = np.zeros((len(target_sequences), max_sequence_length, vocab_size), dtype='float32')
 for i, seq in enumerate(target_sequences):
     for t, word_id in enumerate(seq):
         if word_id > 0:
@@ -66,10 +65,10 @@ model.compile(optimizer='adam', loss='categorical_crossentropy', metrics=['accur
 # Train the model
 model.fit([input_sequences, target_sequences_input], target_data, batch_size=64, epochs=100, validation_split=0.2)
 
-# Define the inference model
+# Define the inference model for the encoder
 encoder_model = Model(encoder_inputs, encoder_states)
 
-# Decoder inference setup
+# Define the inference model for the decoder
 decoder_state_input_h = Input(shape=(lstm_units,))
 decoder_state_input_c = Input(shape=(lstm_units,))
 decoder_states_inputs = [decoder_state_input_h, decoder_state_input_c]
