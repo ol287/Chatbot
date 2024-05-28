@@ -13,6 +13,9 @@ data = pd.read_csv('chatbot_data.csv')
 input_texts = data['input'].values
 target_texts = data['response'].values
 
+# Add 'startseq' and 'endseq' tokens to target texts
+target_texts = ['startseq ' + text + ' endseq' for text in target_texts]
+
 # Tokenize the text
 tokenizer = Tokenizer()
 tokenizer.fit_on_texts(input_texts + target_texts)
@@ -103,7 +106,7 @@ def decode_sequence(input_seq):
 
         # Exit condition: either hit max length or find stop word.
         if (sampled_word == 'endseq' or
-           len(decoded_sentence) > max_sequence_length):
+           len(decoded_sentence.split()) > max_sequence_length):
             stop_condition = True
 
         # Update the target sequence (of length 1)
