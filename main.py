@@ -7,7 +7,7 @@ from tensorflow.keras.models import Model
 from tensorflow.keras.layers import Input, LSTM, Dense, Embedding
 
 # Load the dataset
-data = pd.read_csv('/content/sample_data/chatbot_data (1).csv')
+data = pd.read_csv('chatbot_data.csv')
 
 # Preprocess the data
 input_texts = data['input'].values
