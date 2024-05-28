@@ -4,12 +4,10 @@ import tensorflow as tf
 from tensorflow.keras.preprocessing.text import Tokenizer
 from tensorflow.keras.preprocessing.sequence import pad_sequences
 from tensorflow.keras.models import Model
-from tensorflow.keras.layers import Input, LSTM, Dense, Embedding, Dropout
-from tensorflow.keras.callbacks import EarlyStopping, ReduceLROnPlateau
-from tensorflow.keras.optimizers import Adam
+from tensorflow.keras.layers import Input, LSTM, Dense, Embedding
 
 # Load the dataset
-data = pd.read_csv('chatbot_data.csv')
+data = pd.read_csv('/content/sample_data/chatbot_data (1).csv')
 
 # Preprocess the data
 input_texts = data['input'].values
@@ -49,14 +47,14 @@ lstm_units = 256
 # Encoder
 encoder_inputs = Input(shape=(max_sequence_length,))
 encoder_embedding = Embedding(vocab_size, embedding_dim, mask_zero=True)(encoder_inputs)
-encoder_lstm = LSTM(lstm_units, return_state=True, dropout=0.3, recurrent_dropout=0.3)
+encoder_lstm = LSTM(lstm_units, return_state=True)
 _, state_h, state_c = encoder_lstm(encoder_embedding)
 encoder_states = [state_h, state_c]
 
 # Decoder
 decoder_inputs = Input(shape=(max_sequence_length,))
 decoder_embedding = Embedding(vocab_size, embedding_dim, mask_zero=True)(decoder_inputs)
-decoder_lstm = LSTM(lstm_units, return_sequences=True, return_state=True, dropout=0.3, recurrent_dropout=0.3)
+decoder_lstm = LSTM(lstm_units, return_sequences=True, return_state=True)
 decoder_outputs, _, _ = decoder_lstm(decoder_embedding, initial_state=encoder_states)
 decoder_dense = Dense(vocab_size, activation='softmax')
 decoder_outputs = decoder_dense(decoder_outputs)
@@ -64,19 +62,11 @@ decoder_outputs = decoder_dense(decoder_outputs)
 # Define the model
 model = Model([encoder_inputs, decoder_inputs], decoder_outputs)
 
-# Compile the model with a lower learning rate
-optimizer = Adam(learning_rate=0.001)
-model.compile(optimizer=optimizer, loss='categorical_crossentropy', metrics=['accuracy'])
-
-# Callbacks for early stopping and learning rate reduction
-early_stopping = EarlyStopping(monitor='val_loss', patience=5, restore_best_weights=True)
-reduce_lr = ReduceLROnPlateau(monitor='val_loss', factor=0.2, patience=3, min_lr=0.0001)
+# Compile the model
+model.compile(optimizer='adam', loss='categorical_crossentropy', metrics=['accuracy'])
 
 # Train the model
-model.fit([input_sequences, target_sequences_input], target_data, 
-          batch_size=64, epochs=100, 
-          validation_split=0.2, 
-          callbacks=[early_stopping, reduce_lr])
+model.fit([input_sequences, target_sequences_input], target_data, batch_size=64, epochs=100, validation_split=0.2)
 
 # Define the inference model for the encoder
 encoder_model = Model(encoder_inputs, encoder_states)
